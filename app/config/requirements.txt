@@ -1,0 +1,7 @@
+asyncpg==0.27.0
+fastapi==0.70.0
+python-dotenv==1.0.1
+pycryptodome==3.17
+SQLAlchemy==1.4.22
+tornado==6.3.2
+uvicorn==0.15.0
