@@ -1,12 +1,13 @@
 from app.api.sample.sample_model import DeleteSample, InsertSample, SearchSample, UpdateSample
-from app.common.utils.db_util import delete, insert, select_list, select_one, update
+from app.common.utils.db_util import db_util
 from sqlalchemy.ext.asyncio import async_scoped_session
 
 # ----------------------------------------------------------------------
 # get sample_info
 # ----------------------------------------------------------------------
 async def get_sample_info(
-    searchSample: SearchSample
+    searchSample: SearchSample,
+    session: async_scoped_session = None
 ):
     # sql
     sql = f"""
@@ -28,12 +29,14 @@ async def get_sample_info(
     }
 
     # execute sql
-    return await select_one(sql, param)
+    return await db_util.select_one(sql, param, session)
 
 # ----------------------------------------------------------------------
 # get sample_list
 # ----------------------------------------------------------------------
-async def get_sample_list():
+async def get_sample_list(
+    session: async_scoped_session = None
+):
     # sql
     sql = f"""
         -- get_sample_list
@@ -48,8 +51,11 @@ async def get_sample_list():
             crt_dttm desc
     """
 
+    # parameter
+    param = {}
+
     # execute sql
-    return await select_list(sql)
+    return await db_util.select_list(sql, param, session)
 
 # ----------------------------------------------------------------------
 # insert sample
@@ -82,7 +88,7 @@ async def insert_sample(
     }
 
     # execute sql
-    return await insert(sql, param, session)
+    return await db_util.insert(sql, param, session)
 
 # ----------------------------------------------------------------------
 # update sample
@@ -111,7 +117,7 @@ async def update_sample(
     }
 
     # execute sql
-    return await update(sql, param, session)
+    return await db_util.update(sql, param, session)
 
 # ----------------------------------------------------------------------
 # delete sample
@@ -135,4 +141,4 @@ async def delete_sample(
     }
 
     # execute sql
-    return await delete(sql, param, session)
+    return await db_util.delete(sql, param, session)

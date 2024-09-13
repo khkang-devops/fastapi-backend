@@ -76,42 +76,38 @@ write_async_session_factory = sessionmaker(write_engine, class_=AsyncSession)
 write_session = async_scoped_session(write_async_session_factory, scopefunc=current_task)
 
 # ------------------------------------------------------------------------------------------
-# get write db
+# database util
 # ------------------------------------------------------------------------------------------
-async def get_write_db():
-    db = write_session()
-    try:
-        yield db
-    finally:
-        await db.close()
+class DatabaseUtil:
+    # get_session
+    async def get_session(
+        self,
+        type: str = ""
+    ):
+        session = None
 
-# ------------------------------------------------------------------------------------------
-# read db util
-# ------------------------------------------------------------------------------------------
-async def select_read_db():
-    # log
-    logger.debug("select 1")
+        if type == "read":
+            session = read_session()
+        else:
+            session = write_session()
 
-    # execute sql
-    async with read_session() as session:
         try:
-            row = await session.execute("select 1")
-            result = dict(row.fetchone())
-            return result
-        except Exception as ex:
-            logger.error(repr(ex))
-            return None
+            return session
+        finally:
+            await session.close()
 
-async def select_count(
-    sql: str = "",
-    param: dict = {}
-):
-    # log
-    logger.debug(param)
-    logger.debug(sql)
+    # select_count
+    async def select_count(
+        self,
+        sql: str = "",
+        param: dict = {},
+        session: async_scoped_session = None
+    ):
+        # log
+        logger.debug(param)
+        logger.debug(sql)
 
-    # execute sql
-    async with read_session() as session:
+        # execute sql
         try:
             result = await session.execute(sql, param)
             return result.scalar()
@@ -119,16 +115,18 @@ async def select_count(
             logger.error(repr(ex))
             return 0
 
-async def select_one(
-    sql: str = "",
-    param: dict = {}
-):
-    # log
-    logger.debug(param)
-    logger.debug(sql)
+    # select_one
+    async def select_one(
+        self,
+        sql: str = "",
+        param: dict = {},
+        session: async_scoped_session = None
+    ):
+        # log
+        logger.debug(param)
+        logger.debug(sql)
 
-    # execute sql
-    async with read_session() as session:
+        # execute sql
         try:
             result = await session.execute(sql, param)
             row = result.first()
@@ -148,16 +146,18 @@ async def select_one(
             logger.error(repr(ex))
             return None
 
-async def select_list(
-    sql: str = "",
-    param: dict = {}
-):
-    # log
-    logger.debug(param)
-    logger.debug(sql)
+    # select_list
+    async def select_list(
+        self,
+        sql: str = "",
+        param: dict = {},
+        session: async_scoped_session = None
+    ):
+        # log
+        logger.debug(param)
+        logger.debug(sql)
 
-    # execute sql
-    async with read_session() as session:
+        # execute sql
         try:
             result = []
             rows = await session.execute(sql, param)
@@ -178,100 +178,76 @@ async def select_list(
             logger.error(repr(ex))
             return None
 
-# ------------------------------------------------------------------------------------------
-# write db util
-# ------------------------------------------------------------------------------------------
-async def select_write_db():
-    # log
-    logger.debug("select 1")
+    # insert
+    async def insert(
+        self,
+        sql: str = "",
+        param: dict = {},
+        session: async_scoped_session = None
+    ):
+        # log
+        logger.debug(param)
+        logger.debug(sql)
 
-    # execute sql
-    async with write_session() as session:
         try:
-            row = await session.execute("select 1")
-            result = dict(row.fetchone())
-            return result
+            # execute sql
+            await session.execute(sql, param)
+
+            # return
+            status_code = status.HTTP_201_CREATED
+            response_body = api_response.get(status_code)
+            return JSONResponse(status_code=status_code, content=response_body)
         except Exception as ex:
             logger.error(repr(ex))
-            return None
+            raise Exception(ex)
 
-async def insert(
-    sql: str = "",
-    param: dict = {},
-    session: async_scoped_session = None
-):
-    # log
-    logger.debug(param)
-    logger.debug(sql)
+    # update
+    async def update(
+        self,
+        sql: str = "",
+        param: dict = {},
+        session: async_scoped_session = None
+    ):
+        # log
+        logger.debug(param)
+        logger.debug(sql)
 
-    try:
-        # not transaction
-        if session is None:
-            async with write_session() as session:
-                await session.execute(sql, param)
-                await session.commit()
-        # transaction
-        else:
+        try:
+            # execute sql
             await session.execute(sql, param)
 
-        # return
-        status_code = status.HTTP_201_CREATED
-        response_body = api_response.get(status_code)
-        return JSONResponse(status_code=status_code, content=response_body)
-    except Exception as ex:
-        logger.error(repr(ex))
-        raise Exception(ex)
+            # return
+            status_code = status.HTTP_200_OK
+            response_body = api_response.get(status_code)
+            return JSONResponse(status_code=status_code, content=response_body)
+        except Exception as ex:
+            logger.error(repr(ex))
+            raise Exception(ex)
 
-async def update(
-    sql: str = "",
-    param: dict = {},
-    session: async_scoped_session = None
-):
-    # log
-    logger.debug(param)
-    logger.debug(sql)
+    # delete
+    async def delete(
+        self,
+        sql: str = "",
+        param: dict = {},
+        session: async_scoped_session = None
+    ):
+        # log
+        logger.debug(param)
+        logger.debug(sql)
 
-    try:
-        # not transaction
-        if session is None:
-            async with write_session() as session:
-                await session.execute(sql, param)
-                await session.commit()
-        # transaction
-        else:
+        try:
+            # execute sql
             await session.execute(sql, param)
 
-        # return
-        status_code = status.HTTP_201_CREATED
-        response_body = api_response.get(status_code)
-        return JSONResponse(status_code=status_code, content=response_body)
-    except Exception as ex:
-        logger.error(repr(ex))
-        raise Exception(ex)
+            # return
+            status_code = status.HTTP_200_OK
+            response_body = api_response.get(status_code)
+            return JSONResponse(status_code=status_code, content=response_body)
+        except Exception as ex:
+            logger.error(repr(ex))
+            raise Exception(ex)
 
-async def delete(
-    sql: str = "",
-    param: dict = {},
-    session: async_scoped_session = None
-):
-    # log
-    logger.debug(param)
-    logger.debug(sql)
-
-    try:
-        # not transaction
-        if session is None:
-            async with write_session() as session:
-                await session.execute(sql, param)
-                await session.commit()
-        # transaction
-        else:
-            await session.execute(sql, param)
-
-        # return
-        status_code = status.HTTP_200_OK
-        response_body = api_response.get(status_code)
-        return JSONResponse(status_code=status_code, content=response_body)
-    except Exception as ex:
-        logger.error(repr(ex))
-        raise Exception(ex)
+# ------------------------------------------------------------------------------------------
+# create db_util
+# ------------------------------------------------------------------------------------------
+db_util = DatabaseUtil()

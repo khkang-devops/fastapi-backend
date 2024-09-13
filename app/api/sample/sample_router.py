@@ -1,15 +1,15 @@
 from app.api.sample import sample_service
 from app.api.sample.sample_model import DeleteSample, InsertSample, SearchSample, TransactionSample, UpdateSample
 from app.common.utils.common_util import return_exception
-from app.common.utils.db_util import get_write_db
 from app.common.utils.log_util import get_logger
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import async_scoped_session
+from app.common.utils.route_util import SessionManagingRoute
+from fastapi import APIRouter, Request
 
 # logger
 logger = get_logger(__name__)
 
 # router
+# router = APIRouter(route_class=SessionManagingRoute)
 router = APIRouter()
 
 # ----------------------------------------------------------------------
@@ -17,10 +17,11 @@ router = APIRouter()
 # ----------------------------------------------------------------------
 @router.post("/info")
 async def get_sample_info(
-    searchSample: SearchSample
+    searchSample: SearchSample,
+    request: Request
 ):
     try:
-        return await sample_service.get_sample_info(searchSample)
+        return await sample_service.get_sample_info(searchSample, request.state.db_session)
     except Exception as ex:
         return return_exception(ex)
 
@@ -28,9 +29,11 @@ async def get_sample_info(
 # get sample_list
 # ----------------------------------------------------------------------
 @router.post("/list")
-async def get_sample_list():
+async def get_sample_list(
+    request: Request
+):
     try:
-        return await sample_service.get_sample_list()
+        return await sample_service.get_sample_list(request.state.db_session)
     except Exception as ex:
         return return_exception(ex)
 
@@ -39,10 +42,11 @@ async def get_sample_list():
 # ----------------------------------------------------------------------
 @router.post("/insert")
 async def insert_sample(
-    insertSample: InsertSample
+    insertSample: InsertSample,
+    request: Request
 ):
     try:
-        return await sample_service.insert_sample(insertSample)
+        return await sample_service.insert_sample(insertSample, request.state.db_session)
     except Exception as ex:
         return return_exception(ex)
 
@@ -51,10 +55,11 @@ async def insert_sample(
 # ----------------------------------------------------------------------
 @router.post("/update")
 async def update_sample(
-    updateSample: UpdateSample
+    updateSample: UpdateSample,
+    request: Request
 ):
     try:
-        return await sample_service.update_sample(updateSample)
+        return await sample_service.update_sample(updateSample, request.state.db_session)
     except Exception as ex:
         return return_exception(ex)
 
@@ -63,10 +68,11 @@ async def update_sample(
 # ----------------------------------------------------------------------
 @router.post("/delete")
 async def delete_sample(
-    deleteSample: DeleteSample
+    deleteSample: DeleteSample,
+    request: Request
 ):
     try:
-        return await sample_service.delete_sample(deleteSample)
+        return await sample_service.delete_sample(deleteSample, request.state.db_session)
     except Exception as ex:
         return return_exception(ex)
 
@@ -76,9 +82,9 @@ async def delete_sample(
 @router.post("/transaction")
 async def transaction_sample(
     transactionSample: TransactionSample,
-    session: async_scoped_session = Depends(get_write_db) # db sessiob for transaction
+    request: Request
 ):
     try:
-        return await sample_service.transaction_sample(transactionSample, session)
+        return await sample_service.transaction_sample(transactionSample, request.state.db_session)
     except Exception as ex:
         return return_exception(ex)
