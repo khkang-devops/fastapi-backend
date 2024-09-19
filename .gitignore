@@ -4,4 +4,3 @@
 **/.vscode
 **/tests/*
 .idea
-app/main.py
