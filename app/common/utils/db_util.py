@@ -79,21 +79,14 @@ write_session = async_scoped_session(write_async_session_factory, scopefunc=curr
 # ------------------------------------------------------------------------------------------
 class DatabaseUtil:
     # get_session
-    async def get_session(
+    def get_session(
         self,
         type: str = ""
     ):
-        session = None
-
         if type == "read":
-            session = read_session()
+            return read_session
         else:
-            session = write_session()
-
-        try:
-            return session
-        finally:
-            await session.close()
+            return write_session
 
     # select_count
     async def select_count(

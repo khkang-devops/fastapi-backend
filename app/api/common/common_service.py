@@ -14,8 +14,9 @@ async def insert_user_history(
     insertUserHistory: InsertUserHistory = None
 ):
     try:
-        session = await db_util.get_session("write")
-        await common_dao.insert_user_history(insertUserHistory, session)
-        await session.commit()
+        write_session = db_util.get_session("write")
+        async with write_session() as session:
+            await common_dao.insert_user_history(insertUserHistory, session)
+            await session.commit()
     except Exception as ex:
         return return_exception(ex)

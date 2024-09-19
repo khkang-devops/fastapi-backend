@@ -28,8 +28,13 @@ app.include_router(
 # startup
 @app.on_event("startup")
 async def startup_event():
-    await db_util.select_one("select 1", {}, await db_util.get_session("read"))
-    await db_util.select_one("select 1", {}, await db_util.get_session("write"))
+    r_session = db_util.get_session("read")
+    w_session = db_util.get_session("write")
+
+    async with r_session() as read_session:
+        async with w_session() as write_session:
+            await db_util.select_one("select 1", {}, read_session)
+            await db_util.select_one("select 1", {}, write_session)
 
 # middleware
 @app.middleware("http")
@@ -37,17 +42,22 @@ async def managing_db_session(request: Request, call_next):
     if "docs" in str(request.url) or "openapi" in str(request.url):
         return await call_next(request)
     else:
-        # session inject
-        request.state.db_session = {
-            "read": await db_util.get_session("read"),
-            "write": await db_util.get_session("write")
-        }
+        r_session = db_util.get_session("read")
+        w_session = db_util.get_session("write")
 
-        # 요청처리
-        response = await call_next(request)
+        async with r_session() as read_session:
+            async with w_session() as write_session:
+                # session inject
+                request.state.db_session = {
+                    "read": read_session,
+                    "write": write_session
+                }
 
-        # session commit
-        await request.state.db_session["write"].commit()
+                # 요청처리
+                response = await call_next(request)
 
-        # return
-        return response
+                # session commit
+                await request.state.db_session["write"].commit()
+
+                # return
+                return response
