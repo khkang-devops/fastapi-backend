@@ -20,7 +20,7 @@ app.include_router(
     prefix="/api/v1/sample",
     tags=["sample"],
     dependencies=[
-        Depends(check_api_token), # 토큰체크
+        Depends(check_api_token), # 토큰체크1
         Depends(insert_log) # 사용이력로그저장 (백그라운드실행)
     ]
 )
