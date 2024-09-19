@@ -4,8 +4,10 @@ from app.common.utils.log_util import get_logger
 from app.config.config import api_response
 from base64 import b64encode, b64decode
 from Crypto.Cipher import AES
+from decimal import Decimal
 from fastapi import status
 from fastapi.responses import JSONResponse
+from sqlalchemy.engine.cursor import CursorResult
 from tornado.httpclient import AsyncHTTPClient
 
 # logger
@@ -61,6 +63,41 @@ async def async_api_call(url, data):
     )
 
     return response
+
+# ----------------------------------------------------------------------
+# DB조회결과 -> list
+# ----------------------------------------------------------------------
+def get_list(rows: CursorResult):
+    result = []
+
+    for row in rows:
+        row_dict = {}
+        for column in row._fields:
+            # decimal to float (because type_error)
+            if isinstance(getattr(row, column), Decimal):
+                row_dict[column] = float(getattr(row, column))
+            else:
+                row_dict[column] = getattr(row, column)
+        result.append(row_dict)
+
+    return result
+
+# ----------------------------------------------------------------------
+# DB조회결과 -> dict
+# ----------------------------------------------------------------------
+def get_dict(rows: CursorResult):
+    row = rows.first()
+    result = {}
+
+    if (row is not None):
+        for column in row._fields:
+            # decimal to float (because type_error)
+            if isinstance(getattr(row, column), Decimal):
+                result[column] = float(getattr(row, column))
+            else:
+                result[column] = getattr(row, column)
+
+    return result
 
 # ----------------------------------------------------------------------
 # exception

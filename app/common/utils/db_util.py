@@ -1,8 +1,7 @@
-from app.common.utils.common_util import decrypt
+from app.common.utils.common_util import decrypt, get_dict, get_list
 from app.common.utils.log_util import get_logger
 from app.config.config import api_response, ReadDatabaseConfig, WriteDatabaseConfig
 from asyncio import current_task
-from decimal import Decimal
 from fastapi import status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session, create_async_engine
@@ -128,20 +127,7 @@ class DatabaseUtil:
 
         # execute sql
         try:
-            result = await session.execute(sql, param)
-            row = result.first()
-            row_dict = {}
-
-            # row to dict
-            if (row is not None):
-                for column in row._fields:
-                    # decimal to float (because type_error)
-                    if isinstance(getattr(row, column), Decimal):
-                        row_dict[column] = float(getattr(row, column))
-                    else:
-                        row_dict[column] = getattr(row, column)
-
-            return row_dict
+            return get_dict(await session.execute(sql, param))
         except Exception as ex:
             logger.error(repr(ex))
             return None
@@ -159,21 +145,7 @@ class DatabaseUtil:
 
         # execute sql
         try:
-            result = []
-            rows = await session.execute(sql, param)
-
-            # row to dict
-            for row in rows:
-                row_dict = {}
-                for column in row._fields:
-                    # decimal to float (because type_error)
-                    if isinstance(getattr(row, column), Decimal):
-                        row_dict[column] = float(getattr(row, column))
-                    else:
-                        row_dict[column] = getattr(row, column)
-                result.append(row_dict)
-
-            return result
+            return get_list(await session.execute(sql, param))
         except Exception as ex:
             logger.error(repr(ex))
             return None
