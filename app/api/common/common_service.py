@@ -1,7 +1,7 @@
 from app.api.common import common_dao
 from app.api.common.common_model import InsertUserHistory
-from app.common.utils.common_util import return_exception
-from app.common.utils.db_util import db_util
+from app.common.utils.common_util import get_exception
+from app.common.utils.db_util import write_db
 from app.common.utils.log_util import get_logger
 
 # logger
@@ -14,9 +14,9 @@ async def insert_user_history(
     insertUserHistory: InsertUserHistory = None
 ):
     try:
-        write_session = db_util.get_session("write")
-        async with write_session() as session:
-            await common_dao.insert_user_history(insertUserHistory, session)
-            await session.commit()
+        await common_dao.insert_user_history(insertUserHistory)
+        await write_db.commit()
     except Exception as ex:
-        return return_exception(ex)
+        return get_exception(ex)
+    finally:
+        await write_db.init_session()

@@ -1,7 +1,6 @@
 from app.api.common.common_model import InsertUserHistory
-from app.common.utils.db_util import db_util
+from app.common.utils.db_util import write_db
 from app.config.config import APIConfig
-from sqlalchemy.ext.asyncio import async_scoped_session
 
 # config
 config = APIConfig()
@@ -13,8 +12,7 @@ svc_cd = config.svc_cd
 # insert user history
 # ----------------------------------------------------------------------
 async def insert_user_history(
-    insertUserHistory: InsertUserHistory,
-    session: async_scoped_session = None
+    insertUserHistory: InsertUserHistory
 ):
     # sql
     sql = f"""
@@ -49,4 +47,4 @@ async def insert_user_history(
     }
 
     # execute sql
-    return await db_util.insert(sql, param, session)
+    return await write_db.insert(sql, param)

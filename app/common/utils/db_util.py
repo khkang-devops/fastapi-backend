@@ -1,8 +1,8 @@
 from app.common.utils.common_util import decrypt, get_dict, get_list
 from app.common.utils.log_util import get_logger
-from app.config.config import api_response, ReadDatabaseConfig, WriteDatabaseConfig
+from app.config.config import ReadDatabaseConfig, WriteDatabaseConfig
 from asyncio import current_task
-from fastapi import status
+from fastapi import status, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -78,30 +78,41 @@ write_session = async_scoped_session(write_async_session_factory, scopefunc=curr
 # database util
 # ------------------------------------------------------------------------------------------
 class DatabaseUtil:
-    # get_session
-    def get_session(
-        self,
-        type: str = ""
-    ):
-        if type == "read":
-            return read_session
-        else:
-            return write_session
+    # init
+    def __init__(self, engine, session):
+        self.engine = engine
+        self.session = session
+
+    # commit
+    async def commit(self):
+        await self.session().commit()
+
+    # init_session
+    async def init_session(self):
+        # 세션초기화
+        await self.session().close()
+        logger.debug("session close")
+
+        # registry dictionary 세션객체정리
+        await self.session.remove()
+        logger.debug("session remove")
+
+        # 사용중인커넥션풀반환
+        await self.engine.dispose()
+        logger.debug("engine dispose")
 
     # select_count
     async def select_count(
         self,
         sql: str = "",
-        param: dict = {},
-        session: async_scoped_session = None
+        param: dict = {}
     ):
         # log
         logger.debug(param)
         logger.debug(sql)
 
-        # execute sql
         try:
-            result = await session.execute(sql, param)
+            result = await self.session().execute(sql, param)
             return result.scalar()
         except Exception as ex:
             logger.error(repr(ex))
@@ -111,16 +122,14 @@ class DatabaseUtil:
     async def select_one(
         self,
         sql: str = "",
-        param: dict = {},
-        session: async_scoped_session = None
+        param: dict = {}
     ):
         # log
         logger.debug(param)
         logger.debug(sql)
 
-        # execute sql
         try:
-            return get_dict(await session.execute(sql, param))
+            return get_dict(await self.session().execute(sql, param))
         except Exception as ex:
             logger.error(repr(ex))
             return None
@@ -129,16 +138,14 @@ class DatabaseUtil:
     async def select_list(
         self,
         sql: str = "",
-        param: dict = {},
-        session: async_scoped_session = None
+        param: dict = {}
     ):
         # log
         logger.debug(param)
         logger.debug(sql)
 
-        # execute sql
         try:
-            return get_list(await session.execute(sql, param))
+            return get_list(await self.session().execute(sql, param))
         except Exception as ex:
             logger.error(repr(ex))
             return None
@@ -147,21 +154,14 @@ class DatabaseUtil:
     async def insert(
         self,
         sql: str = "",
-        param: dict = {},
-        session: async_scoped_session = None
+        param: dict = {}
     ):
         # log
         logger.debug(param)
         logger.debug(sql)
 
         try:
-            # execute sql
-            await session.execute(sql, param)
-
-            # return
-            status_code = status.HTTP_201_CREATED
-            response_body = api_response.get(status_code)
-            return JSONResponse(status_code=status_code, content=response_body)
+            await self.session().execute(sql, param)
         except Exception as ex:
             logger.error(repr(ex))
             raise Exception(ex)
@@ -170,21 +170,14 @@ class DatabaseUtil:
     async def update(
         self,
         sql: str = "",
-        param: dict = {},
-        session: async_scoped_session = None
+        param: dict = {}
     ):
         # log
         logger.debug(param)
         logger.debug(sql)
 
         try:
-            # execute sql
-            await session.execute(sql, param)
-
-            # return
-            status_code = status.HTTP_200_OK
-            response_body = api_response.get(status_code)
-            return JSONResponse(status_code=status_code, content=response_body)
+            await self.session().execute(sql, param)
         except Exception as ex:
             logger.error(repr(ex))
             raise Exception(ex)
@@ -193,21 +186,14 @@ class DatabaseUtil:
     async def delete(
         self,
         sql: str = "",
-        param: dict = {},
-        session: async_scoped_session = None
+        param: dict = {}
     ):
         # log
         logger.debug(param)
         logger.debug(sql)
 
         try:
-            # execute sql
-            await session.execute(sql, param)
-
-            # return
-            status_code = status.HTTP_200_OK
-            response_body = api_response.get(status_code)
-            return JSONResponse(status_code=status_code, content=response_body)
+            await self.session().execute(sql, param)
         except Exception as ex:
             logger.error(repr(ex))
             raise Exception(ex)
@@ -215,4 +201,5 @@ class DatabaseUtil:
 # ------------------------------------------------------------------------------------------
 # create db_util
 # ------------------------------------------------------------------------------------------
-db_util = DatabaseUtil()
+read_db = DatabaseUtil(read_engine, read_session)
+write_db = DatabaseUtil(write_engine, write_session)

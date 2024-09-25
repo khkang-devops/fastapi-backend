@@ -13,24 +13,6 @@ config_file = {
     "PRD": "app/config/.env_prd",
 }
 
-# api_response
-api_response = {
-    200: {"status": 200, "code": "S00000", "message": "요청 성공하였습니다."},
-    201: {"status": 201, "code": "S00001", "message": "요청 등록되었습니다."},
-    203: {"status": 203, "code": "S00002", "message": "요청자의 권한이 맞지 않습니다."},
-    400: {"status": 400, "code": "F00000", "message": "요청 형식이 맞지 않습니다"},
-    401: {"status": 401, "code": "F00001", "message": "시스템 접근 권한이 없습니다"},
-    404: {"status": 404, "code": "E00005", "message": "요청한 정보가 존재하지 않습니다."},
-    406: {
-        "status": 406,
-        "code": "E00006",
-        "message": "Not Acceptable, refer to description.",
-        "description": None,
-    },
-    409: {"status": 409, "code": "E00005", "message": "이미 요청한 정보가 있습니다"},
-    500: {"status": 500, "code": "E00000", "message": "시스템 오류입니다", "description": None},
-}
-
 # APIConfig
 class APIConfig(BaseSettings):
     svc_cd: str = os.environ.get("svc_cd")

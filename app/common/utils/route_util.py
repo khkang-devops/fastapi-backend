@@ -1,6 +1,10 @@
-from app.common.utils.db_util import db_util
+from app.common.utils.db_util import write_db, read_db
+from app.common.utils.log_util import get_logger
 from fastapi import Request
 from fastapi.routing import APIRoute
+
+# logger
+logger = get_logger(__name__)
 
 # ----------------------------------------------------------------------
 # db session 관리
@@ -10,23 +14,16 @@ class SessionManagingRoute(APIRoute):
     def get_route_handler(self):
         original_route_handler = super().get_route_handler()
         async def custom_route_handler(request: Request):
-            r_session = db_util.get_session("read")
-            w_session = db_util.get_session("write")
+            # 요청처리
+            response = await original_route_handler(request)
 
-            async with r_session() as read_session:
-                async with w_session() as write_session:
-                    # session inject
-                    request.state.db_session = {
-                        "read": read_session,
-                        "write": write_session
-                    }
+            # 후처리_세션관리
+            if (read_db.session().in_transaction()):
+                await read_db.init_session()
+            if (write_db.session().in_transaction()):
+                await write_db.commit()
+                await write_db.init_session()
 
-                    # 요청처리
-                    response = await original_route_handler(request)
-
-                    # session commit
-                    await request.state.db_session["write"].commit()
-
-                    # return
-                    return response
+            # return
+            return response
         return custom_route_handler

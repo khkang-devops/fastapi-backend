@@ -1,7 +1,6 @@
 import json
 import ssl
 from app.common.utils.log_util import get_logger
-from app.config.config import api_response
 from base64 import b64encode, b64decode
 from Crypto.Cipher import AES
 from decimal import Decimal
@@ -100,15 +99,34 @@ def get_dict(rows: CursorResult):
     return result
 
 # ----------------------------------------------------------------------
+# get_response
+# ----------------------------------------------------------------------
+def get_response(status_code):
+    if status_code == status.HTTP_200_OK:
+        message = "요청 성공하였습니다."
+    elif status_code == status.HTTP_201_CREATED:
+        message = "정상 처리되었습니다."
+    elif status_code == status.HTTP_400_BAD_REQUEST:
+        message = "요청 형식이 맞지 않습니다."
+    elif status_code == status.HTTP_401_UNAUTHORIZED:
+        message = "시스템 접근 권한이 없습니다."
+    elif status_code == status.HTTP_404_NOT_FOUND:
+        message = "요청한 정보가 존재하지 않습니다."
+    elif status_code == status.HTTP_409_CONFLICT:
+        message = "이미 요청한 정보가 있습니다."
+    elif status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
+        message = "시스템 오류입니다."
+
+    return JSONResponse(status_code=status_code, content={"message": message})
+
+# ----------------------------------------------------------------------
 # exception
 # ----------------------------------------------------------------------
-def return_exception(ex: Exception):
+def get_exception(ex: Exception):
     logger.error(repr(ex))
 
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     if hasattr(ex, "status_code"):
         status_code = ex.status_code
 
-    response_body = api_response.get(status_code)
-    response_body["description"] = repr(ex)
-    return JSONResponse(status_code=status_code, content=response_body)
+    return JSONResponse(status_code=status_code, content={"message": repr(ex)})

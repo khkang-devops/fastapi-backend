@@ -1,13 +1,11 @@
 from app.api.sample.sample_model import DeleteSample, InsertSample, SearchSample, UpdateSample
-from app.common.utils.db_util import db_util
-from sqlalchemy.ext.asyncio import async_scoped_session
+from app.common.utils.db_util import write_db, read_db
 
 # ----------------------------------------------------------------------
 # get sample_info
 # ----------------------------------------------------------------------
 async def get_sample_info(
-    searchSample: SearchSample,
-    session: async_scoped_session = None
+    searchSample: SearchSample
 ):
     # sql
     sql = f"""
@@ -29,14 +27,12 @@ async def get_sample_info(
     }
 
     # execute sql
-    return await db_util.select_one(sql, param, session)
+    return await read_db.select_one(sql, param)
 
 # ----------------------------------------------------------------------
 # get sample_list
 # ----------------------------------------------------------------------
-async def get_sample_list(
-    session: async_scoped_session = None
-):
+async def get_sample_list():
     # sql
     sql = f"""
         -- get_sample_list
@@ -55,14 +51,13 @@ async def get_sample_list(
     param = {}
 
     # execute sql
-    return await db_util.select_list(sql, param, session)
+    return await read_db.select_list(sql, param)
 
 # ----------------------------------------------------------------------
 # insert sample
 # ----------------------------------------------------------------------
 async def insert_sample(
-    insertSample: InsertSample,
-    session: async_scoped_session = None
+    insertSample: InsertSample
 ):
     # sql
     sql = f"""
@@ -88,14 +83,13 @@ async def insert_sample(
     }
 
     # execute sql
-    return await db_util.insert(sql, param, session)
+    await write_db.insert(sql, param)
 
 # ----------------------------------------------------------------------
 # update sample
 # ----------------------------------------------------------------------
 async def update_sample(
-    updateSample: UpdateSample,
-    session: async_scoped_session = None
+    updateSample: UpdateSample
 ):
     # sql
     sql = f"""
@@ -117,14 +111,13 @@ async def update_sample(
     }
 
     # execute sql
-    return await db_util.update(sql, param, session)
+    await write_db.update(sql, param)
 
 # ----------------------------------------------------------------------
 # delete sample
 # ----------------------------------------------------------------------
 async def delete_sample(
-    deleteSample: DeleteSample,
-    session: async_scoped_session = None
+    deleteSample: DeleteSample
 ):
     # sql
     sql = f"""
@@ -141,4 +134,4 @@ async def delete_sample(
     }
 
     # execute sql
-    return await db_util.delete(sql, param, session)
+    await write_db.delete(sql, param)
