@@ -8,9 +8,8 @@ from fastapi import APIRouter
 # logger
 logger = get_logger(__name__)
 
-# router
+# router (세션관리 custom_route_handler 사용)
 router = APIRouter(route_class=SessionManagingRoute)
-# router = APIRouter()
 
 # ----------------------------------------------------------------------
 # get sample_info
