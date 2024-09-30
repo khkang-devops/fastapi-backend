@@ -101,7 +101,10 @@ def get_dict(rows: CursorResult):
 # ----------------------------------------------------------------------
 # get_response
 # ----------------------------------------------------------------------
-def get_response(status_code):
+def get_response(
+    status_code: int = None,
+    result: object = None
+):
     if status_code == status.HTTP_200_OK:
         message = "요청 성공하였습니다."
     elif status_code == status.HTTP_201_CREATED:
@@ -117,10 +120,17 @@ def get_response(status_code):
     elif status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
         message = "시스템 오류입니다."
 
-    return JSONResponse(status_code=status_code, content={"message": message})
+    content = {
+        "message": message
+    }
+
+    if result is not None:
+        content["result"] = result
+
+    return JSONResponse(status_code=status_code, content=content)
 
 # ----------------------------------------------------------------------
-# exception
+# get_exception
 # ----------------------------------------------------------------------
 def get_exception(ex: Exception):
     logger.error(repr(ex))

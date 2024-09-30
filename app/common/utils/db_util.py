@@ -2,8 +2,6 @@ from app.common.utils.common_util import decrypt, get_dict, get_list
 from app.common.utils.log_util import get_logger
 from app.config.config import ReadDatabaseConfig, WriteDatabaseConfig
 from asyncio import current_task
-from fastapi import status, Response
-from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
@@ -91,15 +89,12 @@ class DatabaseUtil:
     async def init_session(self):
         # 세션초기화
         await self.session().close()
-        logger.debug("session close")
 
         # registry dictionary 세션객체정리
         await self.session.remove()
-        logger.debug("session remove")
 
         # 사용중인커넥션풀반환
         await self.engine.dispose()
-        logger.debug("engine dispose")
 
     # select_count
     async def select_count(

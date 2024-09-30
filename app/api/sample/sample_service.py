@@ -14,7 +14,11 @@ async def get_sample_info(
     searchSample: SearchSample
 ):
     try:
-        return await sample_dao.get_sample_info(searchSample)
+        # search
+        result = await sample_dao.get_sample_info(searchSample)
+
+        # return
+        return get_response(status.HTTP_200_OK, result)
     except Exception as ex:
         return get_exception(ex)
 
@@ -23,7 +27,11 @@ async def get_sample_info(
 # ----------------------------------------------------------------------
 async def get_sample_list():
     try:
-        return await sample_dao.get_sample_list()
+        # search
+        result =  await sample_dao.get_sample_list()
+
+        # return
+        return get_response(status.HTTP_200_OK, result)
     except Exception as ex:
         return get_exception(ex)
 
@@ -34,7 +42,11 @@ async def insert_sample(
     insertSample: InsertSample
 ):
     try:
-        return await sample_dao.insert_sample(insertSample)
+        # insert
+        await sample_dao.insert_sample(insertSample)
+
+        # return
+        return get_response(status.HTTP_201_CREATED)
     except Exception as ex:
         return get_exception(ex)
 
@@ -45,7 +57,11 @@ async def update_sample(
     updateSample: UpdateSample
 ):
     try:
-        return await sample_dao.update_sample(updateSample)
+        # update
+        await sample_dao.update_sample(updateSample)
+
+        # return
+        return get_response(status.HTTP_200_OK)
     except Exception as ex:
         return get_exception(ex)
 
@@ -56,7 +72,11 @@ async def delete_sample(
     deleteSample: DeleteSample
 ):
     try:
-        return await sample_dao.delete_sample(deleteSample)
+        # delete
+        await sample_dao.delete_sample(deleteSample)
+
+        # return
+        return get_response(status.HTTP_200_OK)
     except Exception as ex:
         return get_exception(ex)
 
