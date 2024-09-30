@@ -1,10 +1,7 @@
-from app.common.utils.common_util import decrypt
+from app.common.utils.common_util import decrypt, get_dict, get_list
 from app.common.utils.log_util import get_logger
-from app.config.config import api_response, ReadDatabaseConfig, WriteDatabaseConfig
+from app.config.config import ReadDatabaseConfig, WriteDatabaseConfig
 from asyncio import current_task
-from decimal import Decimal
-from fastapi import status
-from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
@@ -76,202 +73,128 @@ write_async_session_factory = sessionmaker(write_engine, class_=AsyncSession)
 write_session = async_scoped_session(write_async_session_factory, scopefunc=current_task)
 
 # ------------------------------------------------------------------------------------------
-# get write db
+# database util
 # ------------------------------------------------------------------------------------------
-async def get_write_db():
-    db = write_session()
-    try:
-        yield db
-    finally:
-        await db.close()
+class DatabaseUtil:
+    # init
+    def __init__(self, engine, session):
+        self.engine = engine
+        self.session = session
 
-# ------------------------------------------------------------------------------------------
-# read db util
-# ------------------------------------------------------------------------------------------
-async def select_read_db():
-    # log
-    logger.debug("select 1")
+    # commit
+    async def commit(self):
+        await self.session().commit()
 
-    # execute sql
-    async with read_session() as session:
+    # init_session
+    async def init_session(self):
+        # 세션초기화
+        await self.session().close()
+
+        # registry dictionary 세션객체정리
+        await self.session.remove()
+
+        # 사용중인커넥션풀반환
+        await self.engine.dispose()
+
+    # select_count
+    async def select_count(
+        self,
+        sql: str = "",
+        param: dict = {}
+    ):
+        # log
+        logger.debug(param)
+        logger.debug(sql)
+
         try:
-            row = await session.execute("select 1")
-            result = dict(row.fetchone())
-            return result
-        except Exception as ex:
-            logger.error(repr(ex))
-            return None
-
-async def select_count(
-    sql: str = "",
-    param: dict = {}
-):
-    # log
-    logger.debug(param)
-    logger.debug(sql)
-
-    # execute sql
-    async with read_session() as session:
-        try:
-            result = await session.execute(sql, param)
+            result = await self.session().execute(sql, param)
             return result.scalar()
         except Exception as ex:
             logger.error(repr(ex))
             return 0
 
-async def select_one(
-    sql: str = "",
-    param: dict = {}
-):
-    # log
-    logger.debug(param)
-    logger.debug(sql)
+    # select_one
+    async def select_one(
+        self,
+        sql: str = "",
+        param: dict = {}
+    ):
+        # log
+        logger.debug(param)
+        logger.debug(sql)
 
-    # execute sql
-    async with read_session() as session:
         try:
-            result = await session.execute(sql, param)
-            row = result.first()
-            row_dict = {}
-
-            # row to dict
-            if (row is not None):
-                for column in row._fields:
-                    # decimal to float (because type_error)
-                    if isinstance(getattr(row, column), Decimal):
-                        row_dict[column] = float(getattr(row, column))
-                    else:
-                        row_dict[column] = getattr(row, column)
-
-            return row_dict
+            return get_dict(await self.session().execute(sql, param))
         except Exception as ex:
             logger.error(repr(ex))
             return None
 
-async def select_list(
-    sql: str = "",
-    param: dict = {}
-):
-    # log
-    logger.debug(param)
-    logger.debug(sql)
+    # select_list
+    async def select_list(
+        self,
+        sql: str = "",
+        param: dict = {}
+    ):
+        # log
+        logger.debug(param)
+        logger.debug(sql)
 
-    # execute sql
-    async with read_session() as session:
         try:
-            result = []
-            rows = await session.execute(sql, param)
-
-            # row to dict
-            for row in rows:
-                row_dict = {}
-                for column in row._fields:
-                    # decimal to float (because type_error)
-                    if isinstance(getattr(row, column), Decimal):
-                        row_dict[column] = float(getattr(row, column))
-                    else:
-                        row_dict[column] = getattr(row, column)
-                result.append(row_dict)
-
-            return result
+            return get_list(await self.session().execute(sql, param))
         except Exception as ex:
             logger.error(repr(ex))
             return None
+
+    # insert
+    async def insert(
+        self,
+        sql: str = "",
+        param: dict = {}
+    ):
+        # log
+        logger.debug(param)
+        logger.debug(sql)
+
+        try:
+            await self.session().execute(sql, param)
+        except Exception as ex:
+            logger.error(repr(ex))
+            raise Exception(ex)
+
+    # update
+    async def update(
+        self,
+        sql: str = "",
+        param: dict = {}
+    ):
+        # log
+        logger.debug(param)
+        logger.debug(sql)
+
+        try:
+            await self.session().execute(sql, param)
+        except Exception as ex:
+            logger.error(repr(ex))
+            raise Exception(ex)
+
+    # delete
+    async def delete(
+        self,
+        sql: str = "",
+        param: dict = {}
+    ):
+        # log
+        logger.debug(param)
+        logger.debug(sql)
+
+        try:
+            await self.session().execute(sql, param)
+        except Exception as ex:
+            logger.error(repr(ex))
+            raise Exception(ex)
 
 # ------------------------------------------------------------------------------------------
-# write db util
+# create db_util
 # ------------------------------------------------------------------------------------------
-async def select_write_db():
-    # log
-    logger.debug("select 1")
-
-    # execute sql
-    async with write_session() as session:
-        try:
-            row = await session.execute("select 1")
-            result = dict(row.fetchone())
-            return result
-        except Exception as ex:
-            logger.error(repr(ex))
-            return None
-
-async def insert(
-    sql: str = "",
-    param: dict = {},
-    session: async_scoped_session = None
-):
-    # log
-    logger.debug(param)
-    logger.debug(sql)
-
-    try:
-        # not transaction
-        if session is None:
-            async with write_session() as session:
-                await session.execute(sql, param)
-                await session.commit()
-        # transaction
-        else:
-            await session.execute(sql, param)
-
-        # return
-        status_code = status.HTTP_201_CREATED
-        response_body = api_response.get(status_code)
-        return JSONResponse(status_code=status_code, content=response_body)
-    except Exception as ex:
-        logger.error(repr(ex))
-        raise Exception(ex)
-
-async def update(
-    sql: str = "",
-    param: dict = {},
-    session: async_scoped_session = None
-):
-    # log
-    logger.debug(param)
-    logger.debug(sql)
-
-    try:
-        # not transaction
-        if session is None:
-            async with write_session() as session:
-                await session.execute(sql, param)
-                await session.commit()
-        # transaction
-        else:
-            await session.execute(sql, param)
-
-        # return
-        status_code = status.HTTP_201_CREATED
-        response_body = api_response.get(status_code)
-        return JSONResponse(status_code=status_code, content=response_body)
-    except Exception as ex:
-        logger.error(repr(ex))
-        raise Exception(ex)
-
-async def delete(
-    sql: str = "",
-    param: dict = {},
-    session: async_scoped_session = None
-):
-    # log
-    logger.debug(param)
-    logger.debug(sql)
-
-    try:
-        # not transaction
-        if session is None:
-            async with write_session() as session:
-                await session.execute(sql, param)
-                await session.commit()
-        # transaction
-        else:
-            await session.execute(sql, param)
-
-        # return
-        status_code = status.HTTP_200_OK
-        response_body = api_response.get(status_code)
-        return JSONResponse(status_code=status_code, content=response_body)
-    except Exception as ex:
-        logger.error(repr(ex))
-        raise Exception(ex)
+read_db = DatabaseUtil(read_engine, read_session)
+write_db = DatabaseUtil(write_engine, write_session)

@@ -1,5 +1,5 @@
 from app.api.common.common_model import InsertUserHistory
-from app.common.utils.db_util import insert
+from app.common.utils.db_util import write_db
 from app.config.config import APIConfig
 
 # config
@@ -47,4 +47,4 @@ async def insert_user_history(
     }
 
     # execute sql
-    return await insert(sql, param)
+    return await write_db.insert(sql, param)

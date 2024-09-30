@@ -1,8 +1,8 @@
 from app.api.sample import sample_dao
 from app.api.sample.sample_model import DeleteSample, InsertSample, SearchSample, TransactionSample, UpdateSample
-from app.common.utils.common_util import return_exception
+from app.common.utils.common_util import get_response, get_exception
 from app.common.utils.log_util import get_logger
-from sqlalchemy.ext.asyncio import async_scoped_session
+from fastapi import status
 
 # logger
 logger = get_logger(__name__)
@@ -14,18 +14,26 @@ async def get_sample_info(
     searchSample: SearchSample
 ):
     try:
-        return await sample_dao.get_sample_info(searchSample)
+        # search
+        result = await sample_dao.get_sample_info(searchSample)
+
+        # return
+        return get_response(status.HTTP_200_OK, result)
     except Exception as ex:
-        return return_exception(ex)
+        return get_exception(ex)
 
 # ----------------------------------------------------------------------
 # get sample_list
 # ----------------------------------------------------------------------
 async def get_sample_list():
     try:
-        return await sample_dao.get_sample_list()
+        # search
+        result =  await sample_dao.get_sample_list()
+
+        # return
+        return get_response(status.HTTP_200_OK, result)
     except Exception as ex:
-        return return_exception(ex)
+        return get_exception(ex)
 
 # ----------------------------------------------------------------------
 # insert sample
@@ -34,9 +42,13 @@ async def insert_sample(
     insertSample: InsertSample
 ):
     try:
-        return await sample_dao.insert_sample(insertSample)
+        # insert
+        await sample_dao.insert_sample(insertSample)
+
+        # return
+        return get_response(status.HTTP_201_CREATED)
     except Exception as ex:
-        return return_exception(ex)
+        return get_exception(ex)
 
 # ----------------------------------------------------------------------
 # update sample
@@ -45,9 +57,13 @@ async def update_sample(
     updateSample: UpdateSample
 ):
     try:
-        return await sample_dao.update_sample(updateSample)
+        # update
+        await sample_dao.update_sample(updateSample)
+
+        # return
+        return get_response(status.HTTP_200_OK)
     except Exception as ex:
-        return return_exception(ex)
+        return get_exception(ex)
 
 # ----------------------------------------------------------------------
 # delete sample
@@ -56,35 +72,34 @@ async def delete_sample(
     deleteSample: DeleteSample
 ):
     try:
-        return await sample_dao.delete_sample(deleteSample)
+        # delete
+        await sample_dao.delete_sample(deleteSample)
+
+        # return
+        return get_response(status.HTTP_200_OK)
     except Exception as ex:
-        return return_exception(ex)
+        return get_exception(ex)
 
 # ----------------------------------------------------------------------
 # transaction sample
 # ----------------------------------------------------------------------
 async def transaction_sample(
-    transactionSample: TransactionSample,
-    session: async_scoped_session = None
+    transactionSample: TransactionSample
 ):
     try:
         # delete
         deleteSample = DeleteSample()
         deleteSample.sp_id = transactionSample.sp_id
-        await sample_dao.delete_sample(deleteSample, session)
+        await sample_dao.delete_sample(deleteSample)
 
         # insert
         insertSample = InsertSample()
         insertSample.sp_id = transactionSample.sp_id
         insertSample.sp_nm = transactionSample.sp_nm
         insertSample.crt_usr = transactionSample.crt_usr
-        response = await sample_dao.insert_sample(insertSample, session)
-
-        # commit
-        await session.commit()
+        await sample_dao.insert_sample(insertSample)
 
         # return
-        return response
+        return get_response(status.HTTP_200_OK)
     except Exception as ex:
-        await session.rollback()
-        return return_exception(ex)
+        return get_exception(ex)

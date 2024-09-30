@@ -1,11 +1,12 @@
 import json
 import ssl
 from app.common.utils.log_util import get_logger
-from app.config.config import api_response
 from base64 import b64encode, b64decode
 from Crypto.Cipher import AES
+from decimal import Decimal
 from fastapi import status
 from fastapi.responses import JSONResponse
+from sqlalchemy.engine.cursor import CursorResult
 from tornado.httpclient import AsyncHTTPClient
 
 # logger
@@ -63,15 +64,79 @@ async def async_api_call(url, data):
     return response
 
 # ----------------------------------------------------------------------
-# exception
+# DB조회결과 -> list
 # ----------------------------------------------------------------------
-def return_exception(ex: Exception):
+def get_list(rows: CursorResult):
+    result = []
+
+    for row in rows:
+        row_dict = {}
+        for column in row._fields:
+            # decimal to float (because type_error)
+            if isinstance(getattr(row, column), Decimal):
+                row_dict[column] = float(getattr(row, column))
+            else:
+                row_dict[column] = getattr(row, column)
+        result.append(row_dict)
+
+    return result
+
+# ----------------------------------------------------------------------
+# DB조회결과 -> dict
+# ----------------------------------------------------------------------
+def get_dict(rows: CursorResult):
+    row = rows.first()
+    result = {}
+
+    if (row is not None):
+        for column in row._fields:
+            # decimal to float (because type_error)
+            if isinstance(getattr(row, column), Decimal):
+                result[column] = float(getattr(row, column))
+            else:
+                result[column] = getattr(row, column)
+
+    return result
+
+# ----------------------------------------------------------------------
+# get_response
+# ----------------------------------------------------------------------
+def get_response(
+    status_code: int = None,
+    result: object = None
+):
+    if status_code == status.HTTP_200_OK:
+        message = "요청 성공하였습니다."
+    elif status_code == status.HTTP_201_CREATED:
+        message = "정상 처리되었습니다."
+    elif status_code == status.HTTP_400_BAD_REQUEST:
+        message = "요청 형식이 맞지 않습니다."
+    elif status_code == status.HTTP_401_UNAUTHORIZED:
+        message = "시스템 접근 권한이 없습니다."
+    elif status_code == status.HTTP_404_NOT_FOUND:
+        message = "요청한 정보가 존재하지 않습니다."
+    elif status_code == status.HTTP_409_CONFLICT:
+        message = "이미 요청한 정보가 있습니다."
+    elif status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
+        message = "시스템 오류입니다."
+
+    content = {
+        "message": message
+    }
+
+    if result is not None:
+        content["result"] = result
+
+    return JSONResponse(status_code=status_code, content=content)
+
+# ----------------------------------------------------------------------
+# get_exception
+# ----------------------------------------------------------------------
+def get_exception(ex: Exception):
     logger.error(repr(ex))
 
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     if hasattr(ex, "status_code"):
         status_code = ex.status_code
 
-    response_body = api_response.get(status_code)
-    response_body["description"] = repr(ex)
-    return JSONResponse(status_code=status_code, content=response_body)
+    return JSONResponse(status_code=status_code, content={"message": repr(ex)})

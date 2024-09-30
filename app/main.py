@@ -1,8 +1,8 @@
 from app.api.sample import sample_router
 from app.common.utils.auth_util import check_api_token, insert_log
-from app.common.utils.db_util import select_read_db, select_write_db
+from app.common.utils.db_util import read_db, write_db
 from app.common.utils.log_util import get_logger
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 
 # logger
 logger = get_logger(__name__)
@@ -28,22 +28,24 @@ app.include_router(
 # startup
 @app.on_event("startup")
 async def startup_event():
-    # select_test
-    await select_read_db()
-    await select_write_db()
+    await read_db.select_one("select 1", {})
+    await write_db.select_one("select 1", {})
 
-"""
-# middleware
-@app.middleware("http")
-async def pre_post_process(request: Request, call_next):
-    # 요청전처리
-    await check_api_token(request)
+# # middleware
+# @app.middleware("http")
+# async def managing_db_session(request: Request, call_next):
+#     if "docs" in str(request.url) or "openapi" in str(request.url):
+#         return await call_next(request)
+#     else:
+#         # 요청처리
+#         response = await call_next(request)
 
-    # 요청처리
-    response = await call_next(request)
+#         # commit
+#         await write_db.session().commit()
 
-    # 요청후처리
+#         # init
+#         await read_db.init_session()
+#         await write_db.init_session()
 
-    # return
-    return response
-"""
+#         # return
+#         return response
