@@ -1,5 +1,9 @@
 from app.api.sample.sample_model import DeleteSample, InsertSample, SearchSample, UpdateSample
 from app.common.utils.db_util import write_db, read_db
+from app.common.utils.log_util import get_logger
+
+# logger
+logger = get_logger(__name__)
 
 # ----------------------------------------------------------------------
 # get sample_info
