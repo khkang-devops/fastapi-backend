@@ -93,9 +93,6 @@ class DatabaseUtil:
         # registry dictionary 세션객체정리
         await self.session.remove()
 
-        # 사용중인커넥션풀반환
-        await self.engine.dispose()
-
     # select_count
     async def select_count(
         self,
